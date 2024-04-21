@@ -85,7 +85,7 @@ async def indexpage(request: Request):
     return HTMLResponse(content=html_content, status_code=200)
 
 
-async def text_message_generator(request):
+async def text_message_generator(request: Request):
     """
     Produce output that will be piped to /stream-sse
     """
@@ -197,6 +197,7 @@ def run_webapp(q_img, pipe_img_recv):
     """
     web_config.modify_key("q_img", q_img)
     print(f"q_img in run_webapp: {q_img}")
+    print(f"repr of q_img in webapp: {repr(q_img)}")
 
     web_config.modify_key("pipe_img_recv", pipe_img_recv)
     print(f"pipe_img_recv in run_webapp: {pipe_img_recv}")

@@ -16,6 +16,8 @@ def main():
     # q_img = mp.Queue()
     pipe_img_recv, pipe_img_send = mp.Pipe(duplex=False)
 
+    print(f"q_img in main: {q_img}")
+    print(f"repr of q_img in main: {repr(q_img)}")
     video_process = mp.Process(
         target=produce,
         args=(q_img,

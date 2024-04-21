@@ -26,13 +26,30 @@ visit `/video` sub-path for video stream
 
 # Errors
 ### Queues created by `multiprocessing.Manager.Queue` don't work
-When the app is zitified, mp.Manager.Queue queues don't have the same memory address across processes.
+When the app is zitified, mp.Manager.Queue queues don't have the same memory address across processes:
+```python
+q_img in main: <queue.Queue object at 0x7fee783b7b60>
+representation of q_img in main: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fc79b975370>
+q_img in frame_producer: <queue.Queue object at 0x7fee783b7b60>
+representation of q_img in frame_producer: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fee735caf30>
+q_img in run_webapp: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fee75de6d80; '__str__()' failed>
+representation of q_img in webapp: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fee75de6d80>
+```
+If the ziti decorator is commented out, thereby disabling zitification; all queues have the same memory address:
+```python
+q_img in main: <queue.Queue object at 0x7f10cf11bb60>
+representation of q_img in main: <AutoProxy[Queue] object, typeid 'Queue' at 0x7ff759d71d30>
+q_img in frame_producer: <queue.Queue object at 0x7f10cf11bb60>
+representation of q_img in frame_producer: <AutoProxy[Queue] object, typeid 'Queue' at 0x7f10ca3cab40>
+q_img in run_webapp: <queue.Queue object at 0x7f10cf11bb60>
+representation of q_img in webapp: <AutoProxy[Queue] object, typeid 'Queue' at 0x7f10ccb5ab70>
+```
 
-`frame_producer.py` gets a `queue.Queue` object, and `webapp.py` gets an AutoProxy[Queue] object:  
-`q_img in frame_producer: <queue.Queue object at 0x7f74df1f1990>`  
-`q_img in run_webapp: <AutoProxy[Queue] object, typeid 'Queue' at 0x7f50d2428410; '__str__()' failed>`.
 
 In this small app, defining `q_img` in `__main__.py` as regular `multiprocessing.Queue` seems to work, but larger apps like [Predalert](https://gitlab.com/papiris/predator-detect-and-notify) fail with `OSError 32: Broken Pipe` for both mp.Manager.Queue and mp.Queue.  
 Pipes work in smaller apps as well, but also struggle in Predalert.
 
 ### `11, 'Unexpected Error'` in zitilib.py
+
+
+### Error 107, transport endpoint not connected
