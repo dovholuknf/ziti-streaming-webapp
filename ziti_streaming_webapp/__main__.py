@@ -5,14 +5,15 @@
 import multiprocessing as mp
 import time
 
-from ziti_streaming_webapp.webapp import run_webapp
+from ziti_streaming_webapp.webapp import wrapper_run_webapp
 from ziti_streaming_webapp.frame_producer import produce
 
 
 def main():
+    mp.set_start_method("forkserver", force=True)
     manager = mp.Manager()
-    # q_img = manager.Queue(maxsize=5)
-    q_img = mp.Queue()
+    q_img = manager.Queue()
+    # q_img = mp.Queue()
     pipe_img_recv, pipe_img_send = mp.Pipe(duplex=False)
 
     video_process = mp.Process(
@@ -27,7 +28,7 @@ def main():
     time.sleep(2)
 
     webapp_process = mp.Process(
-        target=run_webapp,
+        target=wrapper_run_webapp,
         args=(q_img,
               pipe_img_recv
               ),

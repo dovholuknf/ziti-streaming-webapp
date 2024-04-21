@@ -208,6 +208,15 @@ def run_webapp(q_img, pipe_img_recv):
     )
 
 
+def wrapper_run_webapp(q_img, pipe_img_recv):
+    """
+    Workaround for `AttributeError:
+    Can't pickle local object 'zitify.<locals>.zitify_func.<locals>.zitified'`
+    when process is started using forkserver method.
+    """
+    run_webapp(q_img, pipe_img_recv)
+
+
 if __name__ == "__main__":
 
     run_webapp()
