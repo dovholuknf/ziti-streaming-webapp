@@ -12,6 +12,7 @@ from hypercorn.config import Config
 from hypercorn.asyncio import serve
 import signal
 import tomllib
+from multiprocessing import Queue
 
 import ziti_streaming_webapp.webconfig
 
@@ -40,8 +41,6 @@ if config_file["SSL"]["enabled"]:
 web_config = ziti_streaming_webapp.webconfig.webConfigHolder()
 
 app = FastAPI()
-print(address)
-print(port)
 
 
 @app.get("/")
@@ -177,16 +176,20 @@ def _signal_handler(*_: any) -> None:
     shutdown_event.set()
 
 
-def run_webapp(q_img, ziti_dict):
+def run_webapp(q_img: Queue, ziti_dict: dict):
     """
     run the zitified webapp
     """
     web_config.modify_key("q_img", q_img)
     print(f"q_img in run_webapp: {q_img}")
-    print(f"repr of q_img in webapp: {repr(q_img)}")
+    print(f"repr of q_img in webapp: {repr(q_img)}\n")
 
     if config_file['ziti']['enabled']:
-        openziti.monkeypatch(bindings=ziti_dict)
+        openziti.monkeypatch(
+            bindings={
+                (config_file['webapp']['address'], int(config_file['webapp']['port'])): ziti_dict
+                }
+            )
 
     loop = asyncio.get_event_loop()
     loop.add_signal_handler(signal.SIGTERM, _signal_handler)

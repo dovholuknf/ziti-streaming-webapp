@@ -20,19 +20,22 @@ def main():
 
     # forkserver is more memory-efficient and resilient
     mp.set_start_method("forkserver", force=True)
-    print(mp.get_start_method())
+    print(f"mp startmethod: {mp.get_start_method()}\n")
+
     manager = mp.Manager()
     q_img = manager.Queue()
 
     # Pass ziti config as proxy object, because queues break otherwise
-    ziti_dict = manager.dict()
-    ziti_dict[f"{(config_file['webapp']['address'], int(config_file['webapp']['port']))}"]={
-                      'ztx': f"{config_file['ziti']['identity']}",
-                      'service': f"{config_file['ziti']['service']}"
-                      }
+    ziti_dict = manager.dict(
+        ztx=f"{config_file['ziti']['identity']}",
+        service=f"{config_file['ziti']['service']}"
+        )
 
     print(f"q_img in main: {q_img}")
-    print(f"repr of q_img in main: {repr(q_img)}")
+    print(f"repr of q_img in main: {repr(q_img)}\n")
+    print(f"ziti config dictionary: {ziti_dict}\n")
+
+    # Start image producer process
     video_process = mp.Process(
         target=produce,
         args=(q_img,
@@ -43,6 +46,7 @@ def main():
 
     time.sleep(2)
 
+    # Start webserver process
     webapp_process = mp.Process(
         target=run_webapp,
         args=(q_img,

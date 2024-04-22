@@ -13,7 +13,7 @@ from multiprocessing import Queue, Pipe
 def produce(q_img: Queue):
     stream = cv.VideoCapture(0)
     print(f"q_img in frame_producer: {q_img}")
-    print(f"repr of q_img in frame_producer: {repr(q_img)}")
+    print(f"repr of q_img in frame_producer: {repr(q_img)}\n")
 
     while True:
         (ret, frame) = stream.read()
