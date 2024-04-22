@@ -26,8 +26,7 @@ def main():
 
     # Pass ziti config as proxy object, because queues break otherwise
     ziti_dict = manager.dict()
-    ziti_dict[f"{(config_file["webapp"]["address"],
-                  int(config_file["webapp"]["port"]))}"] = {
+    ziti_dict[f"{(config_file['webapp']['address'], int(config_file['webapp']['port']))}"]={
                       'ztx': f"{config_file['ziti']['identity']}",
                       'service': f"{config_file['ziti']['service']}"
                       }
