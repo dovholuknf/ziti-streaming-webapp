@@ -25,29 +25,60 @@ visit `/video` sub-path for video stream
 
 
 # Errors
-### Queues created by `multiprocessing.Manager.Queue` don't work
-When the app is zitified, mp.Manager.Queue queues don't have the same memory address across processes:
+### AttributeErrors
 ```python
-q_img in main: <queue.Queue object at 0x7fee783b7b60>
-representation of q_img in main: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fc79b975370>
-q_img in frame_producer: <queue.Queue object at 0x7fee783b7b60>
-representation of q_img in frame_producer: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fee735caf30>
-q_img in run_webapp: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fee75de6d80; '__str__()' failed>
-representation of q_img in webapp: <AutoProxy[Queue] object, typeid 'Queue' at 0x7fee75de6d80>
+Process Process-3:
+Traceback (most recent call last):
+  File "/usr/lib64/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib64/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/var/mnt/data/jacob/git/ziti_py_MWE/ziti_streaming_webapp/webapp.py", line 204, in wrapper_run_webapp
+    run_webapp(q_img, ziti_dict)
+  File "/var/mnt/data/jacob/git/ziti_py_MWE/ziti_streaming_webapp/webapp.py", line 191, in run_webapp
+    loop = asyncio.get_event_loop()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/asyncio/events.py", line 699, in get_event_loop
+    self.set_event_loop(self.new_event_loop())
+                        ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/asyncio/events.py", line 720, in new_event_loop
+    return self._loop_factory()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/asyncio/unix_events.py", line 64, in __init__
+    super().__init__(selector)
+  File "/usr/lib64/python3.12/asyncio/selector_events.py", line 66, in __init__
+    self._make_self_pipe()
+  File "/usr/lib64/python3.12/asyncio/selector_events.py", line 120, in _make_self_pipe
+    self._ssock, self._csock = socket.socketpair()
+                               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/socket.py", line 610, in socketpair
+    a = socket(family, type, proto, a.detach())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/mnt/data/jacob/git/ziti_py_MWE/.env_3.12/lib64/python3.12/site-packages/openziti/decor.py", line 27, in __init__
+    super().__init__(*args, **dict(kwargs, opts=patch_opts))
+  File "/var/mnt/data/jacob/git/ziti_py_MWE/.env_3.12/lib64/python3.12/site-packages/openziti/zitisock.py", line 55, in __init__
+    self._ziti_bindings = process_bindings(opts.get('bindings'))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/mnt/data/jacob/git/ziti_py_MWE/.env_3.12/lib64/python3.12/site-packages/openziti/zitisock.py", line 28, in process_bindings
+    for k in orig:
+  File "<string>", line 2, in __iter__
+  File "/usr/lib64/python3.12/multiprocessing/managers.py", line 827, in _callmethod
+    proxytype = self._manager._registry[token.typeid][-1]
+                ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute '_registry'
+Exception ignored in: <function BaseEventLoop.__del__ at 0x7f85a27dbe20>
+Traceback (most recent call last):
+  File "/usr/lib64/python3.12/asyncio/base_events.py", line 726, in __del__
+    self.close()
+  File "/usr/lib64/python3.12/asyncio/unix_events.py", line 68, in close
+    super().close()
+  File "/usr/lib64/python3.12/asyncio/selector_events.py", line 104, in close
+    self._close_self_pipe()
+  File "/usr/lib64/python3.12/asyncio/selector_events.py", line 111, in _close_self_pipe
+    self._remove_reader(self._ssock.fileno())
+                        ^^^^^^^^^^^
+AttributeError: '_UnixSelectorEventLoop' object has no attribute '_ssock'
 ```
-If the ziti decorator is commented out, thereby disabling zitification; all queues have the same memory address:
-```python
-q_img in main: <queue.Queue object at 0x7f10cf11bb60>
-representation of q_img in main: <AutoProxy[Queue] object, typeid 'Queue' at 0x7ff759d71d30>
-q_img in frame_producer: <queue.Queue object at 0x7f10cf11bb60>
-representation of q_img in frame_producer: <AutoProxy[Queue] object, typeid 'Queue' at 0x7f10ca3cab40>
-q_img in run_webapp: <queue.Queue object at 0x7f10cf11bb60>
-representation of q_img in webapp: <AutoProxy[Queue] object, typeid 'Queue' at 0x7f10ccb5ab70>
-```
-
-
-In this small app, defining `q_img` in `__main__.py` as regular `multiprocessing.Queue` seems to work, but larger apps like [Predalert](https://gitlab.com/papiris/predator-detect-and-notify) fail with `OSError 32: Broken Pipe` for both mp.Manager.Queue and mp.Queue.  
-Pipes work in smaller apps as well, but also struggle in Predalert.
 
 ### `11, 'Unexpected Error'` in zitilib.py
 

@@ -10,12 +10,10 @@ import time
 from multiprocessing import Queue, Pipe
 
 
-def produce(q_img: Queue, pipe_img_send: Pipe):
+def produce(q_img: Queue):
     stream = cv.VideoCapture(0)
     print(f"q_img in frame_producer: {q_img}")
     print(f"repr of q_img in frame_producer: {repr(q_img)}")
-
-    print(f"pipe_img in frame_producer: {pipe_img_send}")
 
     while True:
         (ret, frame) = stream.read()
@@ -36,9 +34,5 @@ def produce(q_img: Queue, pipe_img_send: Pipe):
         except Exception as e:
             print(f"frameproducer queue: {e}")
 
-        try:
-            pipe_img_send.send(base64_image)
-        except Exception as e:
-            print(f"frameproducer pipe: {e}")
         time.sleep(1)
 

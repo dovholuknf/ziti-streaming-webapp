@@ -4,24 +4,39 @@
 
 import multiprocessing as mp
 import time
+import tomllib
 
-from ziti_streaming_webapp.webapp import wrapper_run_webapp
+from ziti_streaming_webapp.webapp import run_webapp
 from ziti_streaming_webapp.frame_producer import produce
 
 
 def main():
+    # Load configuration file
+    try:
+        with open("./config.toml", "rb") as f:
+            config_file = tomllib.load(f)
+    except tomllib.TOMLDecodeError as e:
+        print(f"ERR: Config file couldn't load due to error: {e}")
+
+    # forkserver is more memory-efficient and resilient
     mp.set_start_method("forkserver", force=True)
+    print(mp.get_start_method())
     manager = mp.Manager()
     q_img = manager.Queue()
-    # q_img = mp.Queue()
-    pipe_img_recv, pipe_img_send = mp.Pipe(duplex=False)
+
+    # Pass ziti config as proxy object, because queues break otherwise
+    ziti_dict = manager.dict()
+    ziti_dict[f"{(config_file["webapp"]["address"],
+                  int(config_file["webapp"]["port"]))}"] = {
+                      'ztx': f"{config_file['ziti']['identity']}",
+                      'service': f"{config_file['ziti']['service']}"
+                      }
 
     print(f"q_img in main: {q_img}")
     print(f"repr of q_img in main: {repr(q_img)}")
     video_process = mp.Process(
         target=produce,
         args=(q_img,
-              pipe_img_send
               ),
         daemon=True
         )
@@ -30,11 +45,11 @@ def main():
     time.sleep(2)
 
     webapp_process = mp.Process(
-        target=wrapper_run_webapp,
+        target=run_webapp,
         args=(q_img,
-              pipe_img_recv
+              ziti_dict
               ),
-        daemon=True
+        daemon=False
         )
     webapp_process.start()
 

@@ -26,8 +26,8 @@ except tomllib.TOMLDecodeError as e:
     print(f"ERR: Config file couldn't load due to error: {e}")
 
 # for hypercorn
-address = config_file["ziti"]["address"]
-port = config_file["ziti"]["port"]
+address = config_file["webapp"]["address"]
+port = config_file["webapp"]["port"]
 config = Config()
 config.bind = [f"{address}:{port}"]
 config.errorlog = "-"  # stderr
@@ -40,10 +40,8 @@ if config_file["SSL"]["enabled"]:
 web_config = ziti_streaming_webapp.webconfig.webConfigHolder()
 
 app = FastAPI()
-
-# for ziti
-identity = config_file["ziti"]["identity"]
-service_name = config_file["ziti"]["service"]
+print(address)
+print(port)
 
 
 @app.get("/")
@@ -145,7 +143,6 @@ async def vid_message_generator(request: Request):
     generate images to be sent to client via SSE
     """
     q_img = web_config.read_key("q_img")
-    pipe_img_recv = web_config.read_key("pipe_img_recv")
 
     # loop over frames
     while True:
@@ -158,13 +155,6 @@ async def vid_message_generator(request: Request):
             base64_image = q_img.get()
         except Exception as e:
             print(f"couldn't get img from q due to: {e}")
-        else:
-            yield base64_image
-
-        try:
-            base64_image = pipe_img_recv.recv()
-        except Exception as e:
-            print(f"couldn't get img from pipe due to: {e}")
         else:
             yield base64_image
 
@@ -187,11 +177,7 @@ def _signal_handler(*_: any) -> None:
     shutdown_event.set()
 
 
-@openziti.zitify(bindings={
-    (address, port): {
-        'ztx': identity, 'service': service_name}
-    })
-def run_webapp(q_img, pipe_img_recv):
+def run_webapp(q_img, ziti_dict):
     """
     run the zitified webapp
     """
@@ -199,23 +185,14 @@ def run_webapp(q_img, pipe_img_recv):
     print(f"q_img in run_webapp: {q_img}")
     print(f"repr of q_img in webapp: {repr(q_img)}")
 
-    web_config.modify_key("pipe_img_recv", pipe_img_recv)
-    print(f"pipe_img_recv in run_webapp: {pipe_img_recv}")
+    if config_file['ziti']['enabled']:
+        openziti.monkeypatch(bindings=ziti_dict)
 
     loop = asyncio.get_event_loop()
     loop.add_signal_handler(signal.SIGTERM, _signal_handler)
     loop.run_until_complete(
         serve(app, config, shutdown_trigger=shutdown_event.wait)
     )
-
-
-def wrapper_run_webapp(q_img, pipe_img_recv):
-    """
-    Workaround for `AttributeError:
-    Can't pickle local object 'zitify.<locals>.zitify_func.<locals>.zitified'`
-    when process is started using forkserver method.
-    """
-    run_webapp(q_img, pipe_img_recv)
 
 
 if __name__ == "__main__":

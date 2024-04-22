@@ -1,10 +1,14 @@
 # This is the config file for ziti-streaming-webapp
 
-[ziti]
-identity = "predalert_server2.json" # relative path to the .json identity file
-service = "predalert_service_2" # name of ziti service to bind to
+[webapp]
 address = "localhost" # which local address to bind to, mostly irrelevant
 port = "8443" # which local port to bind to, mostly irrelevant
+
+
+[ziti]
+enabled = true
+identity = "predalert_server2.json" # relative path to the .json identity file
+service = "predalert_service_2" # name of ziti service to bind to
 
 
 [SSL]
